@@ -2,11 +2,13 @@ package main
 
 import (
 	"bufio"
+	"io"
 	"iptv/dto"
 	"iptv/pkg/bark"
 	"iptv/pkg/config"
 	"iptv/pkg/log"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -110,6 +112,20 @@ func runTask(cfg *config.Config) {
 
 	log.Info("成功汇总 %d 个唯一频道", len(allChannels))
 	_ = bark.Push("IPTV", "成功汇总 %d 个唯一频道", len(allChannels))
+
+	// 5. 重定向输出（如果启用）
+	if cfg.RedirectOutput.Enable {
+		log.Info("[步骤5] 重定向输出文件...")
+		err = redirectOutput(cfg)
+		if err != nil {
+			log.Warn("重定向输出文件失败: %v", err)
+			_ = bark.Push("IPTV", "重定向输出文件失败: %v", err.Error())
+		} else {
+			log.Info("成功重定向输出文件: %s -> %s", cfg.RedirectOutput.Move, cfg.RedirectOutput.To)
+			_ = bark.Push("IPTV", "重定向输出文件失败: %v", "成功重定向输出文件: %s -> %s", cfg.RedirectOutput.Move, cfg.RedirectOutput.To)
+		}
+	}
+
 	log.Info("============================================================")
 }
 
@@ -136,4 +152,54 @@ func readURLsFromFile(filename string) ([]string, error) {
 	}
 
 	return urls, nil
+}
+
+// redirectOutput 拷贝解析结果到指定位置
+func redirectOutput(cfg *config.Config) error {
+	if !cfg.RedirectOutput.Enable {
+		return nil
+	}
+
+	sourceFile := cfg.RedirectOutput.Move
+	targetFile := cfg.RedirectOutput.To
+
+	if sourceFile == "" || targetFile == "" {
+		return nil
+	}
+
+	// 检查源文件是否存在
+	if _, err := os.Stat(sourceFile); os.IsNotExist(err) {
+		return nil // 源文件不存在，不报错，静默返回
+	}
+
+	// 确保目标目录存在
+	targetDir := filepath.Dir(targetFile)
+	if targetDir != "." && targetDir != "" {
+		err := os.MkdirAll(targetDir, 0755)
+		if err != nil {
+			return err
+		}
+	}
+
+	// 打开源文件
+	source, err := os.Open(sourceFile)
+	if err != nil {
+		return err
+	}
+	defer source.Close()
+
+	// 创建目标文件（覆盖模式）
+	target, err := os.Create(targetFile)
+	if err != nil {
+		return err
+	}
+	defer target.Close()
+
+	// 拷贝文件内容
+	_, err = io.Copy(target, source)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

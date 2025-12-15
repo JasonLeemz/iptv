@@ -5,21 +5,26 @@ multicastIP: # 从组播源列表获取的ip数量
   limit: 5
 
 cookie:
-  data: HstCf.....
+  data: "你的cookies值，从浏览器开发者工具中获取" # curl的cookie
 
 crontab:
   enable: true # 是否开启定时任务
-  job: "12 1 * * *" # 具体的执行时间
+  job: "0 1 * * *" # 具体的执行时间 (每天凌晨1点)
 
 output:
   m3u: output/iptv.m3u # M3U格式输出文件
   local: output/local.txt # CSV格式输出文件
-  debug: debug.html # debug HTML文件
+  debug: output/debug.html # debug HTML文件
 
 log:
   path: logs
 
 push:
   bark:
-    host: https://bark.abcd.xyz
-    key: Y2MV....
+    host: https://bark.ybdx.xyz # Bark服务器地址
+    key: "你的Bark密钥" # Bark推送密钥
+
+redirectOutput:
+  enable: true
+  move: output/local.txt
+  to: /path/to/destination/local.txt # 目标文件路径

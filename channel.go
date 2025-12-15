@@ -64,6 +64,11 @@ func fetchChannelsFromAPI(apiURL string, refererURL string, cookies string) ([]d
 		htmlContent, _ := doc.Html()
 		debugFile := cfg.Output.Debug
 		if debugFile != "" {
+			// 确保输出目录存在
+			debugDir := filepath.Dir(debugFile)
+			if debugDir != "." && debugDir != "" {
+				_ = os.MkdirAll(debugDir, 0755)
+			}
 			os.WriteFile(debugFile, []byte(htmlContent), 0644)
 		}
 	}

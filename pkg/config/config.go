@@ -35,6 +35,11 @@ type Config struct {
 			Key  string `yaml:"key"`
 		} `yaml:"bark"`
 	} `yaml:"push"`
+	RedirectOutput struct {
+		Enable bool   `yaml:"enable"`
+		Move   string `yaml:"move"`
+		To     string `yaml:"to"`
+	} `yaml:"redirectOutput"`
 }
 
 var globalConfig *Config
