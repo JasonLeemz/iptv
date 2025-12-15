@@ -87,7 +87,7 @@ func runTask(cfg *config.Config) {
 
 			log.Info("[%d/%d] 正在处理: %s", index+1, len(urls), url)
 			channels, err := FetchChannelsFromURL(url, cfg.Cookie.Data)
-			
+
 			resultsChan <- channelResult{
 				index:    index,
 				url:      url,
@@ -164,7 +164,7 @@ func runTask(cfg *config.Config) {
 			_ = bark.Push("IPTV", "重定向输出文件失败: %v", err.Error())
 		} else {
 			log.Info("成功重定向输出文件: %s -> %s", cfg.RedirectOutput.Move, cfg.RedirectOutput.To)
-			_ = bark.Push("IPTV", "重定向输出文件失败: %v", "成功重定向输出文件: %s -> %s", cfg.RedirectOutput.Move, cfg.RedirectOutput.To)
+			_ = bark.Push("IPTV", "成功重定向输出文件: %s -> %s", cfg.RedirectOutput.Move, cfg.RedirectOutput.To)
 		}
 	}
 
