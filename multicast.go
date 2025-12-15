@@ -35,6 +35,7 @@ func FetchMulticastIPs(cookies string) ([]MulticastSource, error) {
 
 	var sources []MulticastSource
 	count := 0
+	skipFirst := true // 跳过第一条，因为第一条可能是最新数据，获取内容有概率失败
 
 	// 查找 class="channel" 下的链接，且只获取 p=2 的链接
 	// 格式: <div class="channel"><a href='channellist.html?ip=180.127.29.153&tk=03aae295&p=2' title="Channel List">
@@ -50,6 +51,12 @@ func FetchMulticastIPs(cookies string) ([]MulticastSource, error) {
 
 		// 只获取 p=2 的链接
 		if !strings.Contains(href, "p=2") {
+			return
+		}
+
+		// 跳过第一条
+		if skipFirst {
+			skipFirst = false
 			return
 		}
 
