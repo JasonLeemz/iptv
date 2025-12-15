@@ -2,84 +2,64 @@ package cron
 
 import (
 	"fmt"
-	"time"
+
+	"github.com/robfig/cron/v3"
 )
 
 var (
-	schedulerRunning bool
-	stopChan         chan bool
-	currentJob       func()
-	currentCronExpr  string
+	cronInstance *cron.Cron
+	entryID      cron.EntryID
 )
 
 // Init 初始化定时任务调度器
 func Init() {
-	stopChan = make(chan bool)
-	schedulerRunning = false
+	// 创建 cron 实例（标准格式：分 时 日 月 星期）
+	cronInstance = cron.New()
 }
 
-// AddJob 添加定时任务（简化实现，使用标准库）
+// AddJob 添加定时任务
 func AddJob(cronExpr string, job func()) error {
-	if currentJob != nil {
-		return fmt.Errorf("已存在定时任务，请先清除")
+	if cronInstance == nil {
+		return fmt.Errorf("调度器未初始化，请先调用 Init()")
 	}
 
-	currentJob = job
-	currentCronExpr = cronExpr
+	// 如果已存在任务，先移除
+	if entryID != 0 {
+		cronInstance.Remove(entryID)
+	}
 
+	// 添加新任务
+	id, err := cronInstance.AddFunc(cronExpr, job)
+	if err != nil {
+		return fmt.Errorf("添加定时任务失败: %v", err)
+	}
+
+	entryID = id
 	return nil
 }
 
-// Start 启动定时任务（简化实现）
+// Start 启动定时任务
 func Start() {
-	if currentJob == nil {
+	if cronInstance == nil {
 		return
 	}
 
-	if schedulerRunning {
-		return
-	}
-
-	schedulerRunning = true
-	go runScheduler()
-}
-
-// runScheduler 运行调度器（简化实现，每天执行一次）
-func runScheduler() {
-	ticker := time.NewTicker(24 * time.Hour)
-	defer ticker.Stop()
-
-	// 立即执行一次
-	if currentJob != nil {
-		currentJob()
-	}
-
-	for {
-		select {
-		case <-ticker.C:
-			if currentJob != nil {
-				currentJob()
-			}
-		case <-stopChan:
-			return
-		}
-	}
+	// 启动 cron 调度器
+	cronInstance.Start()
 }
 
 // Stop 停止定时任务
 func Stop() {
-	if schedulerRunning {
-		schedulerRunning = false
-		if stopChan != nil {
-			stopChan <- true
-		}
+	if cronInstance != nil {
+		cronInstance.Stop()
 	}
 }
 
 // Clear 清除所有任务
 func Clear() {
 	Stop()
-	currentJob = nil
-	currentCronExpr = ""
+	if cronInstance != nil && entryID != 0 {
+		cronInstance.Remove(entryID)
+		entryID = 0
+	}
 }
-

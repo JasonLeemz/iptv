@@ -9,3 +9,4 @@ logs/
 debug.html
 config/app.yml
 iptv
+iptv.pid

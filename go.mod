@@ -5,6 +5,7 @@ go 1.24.0
 require (
 	github.com/PuerkitoBio/goquery v1.11.0
 	github.com/go-resty/resty/v2 v2.17.1
+	github.com/robfig/cron/v3 v3.0.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
