@@ -10,7 +10,16 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 )
+
+// channelResult 频道获取结果
+type channelResult struct {
+	index    int
+	url      string
+	channels []dto.Channel
+	err      error
+}
 
 // runTask 执行主任务
 func runTask(cfg *config.Config) {
@@ -54,31 +63,64 @@ func runTask(cfg *config.Config) {
 
 	log.Info("从配置文件读取到 %d 个URL", len(urls))
 
-	// 3. 获取所有频道并汇总
+	// 3. 获取所有频道并汇总（使用并发）
 	log.Info("[步骤3] 获取频道数据...")
 	var allChannels []dto.Channel
 	channelMap := make(map[string]bool) // 用于去重
+	var channelMapMutex sync.Mutex      // 用于保护channelMap的互斥锁
 
+	// 获取最大并发数（从配置读取，默认5）
+	maxWorkers := 5
+	if cfg.HTTP.MaxWorkers > 0 {
+		maxWorkers = cfg.HTTP.MaxWorkers
+	}
+
+	// 创建带缓冲的channel用于控制并发
+	workerChan := make(chan struct{}, maxWorkers)
+	resultsChan := make(chan channelResult, len(urls))
+
+	// 启动goroutine处理每个URL
 	for i, pageURL := range urls {
-		log.Info("[%d/%d] 正在处理: %s", i+1, len(urls), pageURL)
+		workerChan <- struct{}{} // 获取worker
+		go func(index int, url string) {
+			defer func() { <-workerChan }() // 释放worker
 
-		channels, err := FetchChannelsFromURL(pageURL, cfg.Cookie.Data)
-		if err != nil {
-			log.Warn("获取频道数据失败: %s,URL:%s", err.Error(), pageURL)
-			_ = bark.Push("IPTV", "获取频道数据失败: %s,URL:%s", err.Error(), pageURL)
+			log.Info("[%d/%d] 正在处理: %s", index+1, len(urls), url)
+			channels, err := FetchChannelsFromURL(url, cfg.Cookie.Data)
+			
+			resultsChan <- channelResult{
+				index:    index,
+				url:      url,
+				channels: channels,
+				err:      err,
+			}
+		}(i, pageURL)
+	}
+
+	// 收集结果
+	successCount := 0
+	for i := 0; i < len(urls); i++ {
+		result := <-resultsChan
+		if result.err != nil {
+			log.Warn("获取频道数据失败: %s,URL:%s", result.err.Error(), result.url)
+			_ = bark.Push("IPTV", "获取频道数据失败: %s,URL:%s", result.err.Error(), result.url)
 			continue
 		}
 
-		// 去重并添加到汇总列表
-		for _, ch := range channels {
+		// 去重并添加到汇总列表（需要加锁保护）
+		channelMapMutex.Lock()
+		for _, ch := range result.channels {
 			if !channelMap[ch.URL] {
 				channelMap[ch.URL] = true
 				allChannels = append(allChannels, ch)
 			}
 		}
+		currentCount := len(allChannels)
+		channelMapMutex.Unlock()
 
-		log.Info("成功获取 %d 个频道（累计: %d 个唯一频道）", len(channels), len(allChannels))
-		_ = bark.Push("IPTV", "成功获取 %d 个频道（累计: %d 个唯一频道）", len(channels), len(allChannels))
+		successCount++
+		log.Info("成功获取 %d 个频道（累计: %d 个唯一频道）", len(result.channels), currentCount)
+		_ = bark.Push("IPTV", "成功获取 %d 个频道（累计: %d 个唯一频道）", len(result.channels), currentCount)
 	}
 
 	if len(allChannels) == 0 {

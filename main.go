@@ -3,6 +3,7 @@ package main
 import (
 	"iptv/pkg/config"
 	"iptv/pkg/cron"
+	httppkg "iptv/pkg/http"
 	"iptv/pkg/log"
 	"os"
 )
@@ -22,8 +23,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	// 执行主任务
-	runTask(cfg)
+	// 初始化HTTP客户端
+	err = httppkg.Init()
+	if err != nil {
+		log.Error("初始化HTTP客户端失败: %v", err)
+		os.Exit(1)
+	}
 
 	// 如果启用定时任务，启动调度器
 	if cfg.Crontab.Enable {
@@ -40,5 +45,8 @@ func main() {
 
 		// 保持程序运行
 		select {}
+	} else {
+		// 执行主任务
+		runTask(cfg)
 	}
 }

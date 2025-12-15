@@ -23,11 +23,11 @@ func Push(title string, bodyFormat string, args ...interface{}) error {
 	barkKey := cfg.Push.Bark.Key
 
 	if barkHost == "" || barkKey == "" {
-		return fmt.Errorf("Bark配置不完整")
+		return fmt.Errorf("bark配置不完整")
 	}
 
 	// 构建推送URL
-	// 格式: https://bark.ybdx.xyz/Y2MVwieFCGUrrJnQk3ashV/标题/内容
+	// 格式: https://bark.abcd.xyz/Y2MVwieFC/标题/内容
 	pushURL := fmt.Sprintf("%s/%s/%s/%s",
 		strings.TrimSuffix(barkHost, "/"),
 		url.QueryEscape(barkKey),
@@ -49,7 +49,7 @@ func Push(title string, bodyFormat string, args ...interface{}) error {
 
 	// 检查响应状态
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Bark推送失败: HTTP %d, %s", resp.StatusCode, string(responseBody))
+		return fmt.Errorf("bark推送失败: HTTP %d, %s", resp.StatusCode, string(responseBody))
 	}
 
 	return nil

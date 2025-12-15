@@ -29,6 +29,10 @@ type Config struct {
 	Log struct {
 		Path string `yaml:"path"`
 	} `yaml:"log"`
+	HTTP struct {
+		Timeout   int `yaml:"timeout"`
+		MaxWorkers int `yaml:"maxWorkers"`
+	} `yaml:"http"`
 	Push struct {
 		Bark struct {
 			Host string `yaml:"host"`
