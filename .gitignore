@@ -1,0 +1,10 @@
+.idea/
+output/
+.statsd/
+*.log
+*.log.*
+go.sum
+logs/
+.DS_Store
+debug.html
+config/app.yml
