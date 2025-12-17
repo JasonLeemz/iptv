@@ -12,7 +12,8 @@ type Config struct {
 		Debug bool `yaml:"debug"`
 	} `yaml:"app"`
 	MulticastIP struct {
-		Limit int `yaml:"limit"`
+		Enable bool `yaml:"enable"`
+		Limit  int  `yaml:"limit"`
 	} `yaml:"multicastIP"`
 	Cookie struct {
 		Data string `yaml:"data"`
@@ -30,7 +31,7 @@ type Config struct {
 		Path string `yaml:"path"`
 	} `yaml:"log"`
 	HTTP struct {
-		Timeout   int `yaml:"timeout"`
+		Timeout    int `yaml:"timeout"`
 		MaxWorkers int `yaml:"maxWorkers"`
 	} `yaml:"http"`
 	Push struct {
@@ -69,4 +70,3 @@ func LoadConfig(filename string) (*Config, error) {
 func GetConfig() *Config {
 	return globalConfig
 }
-

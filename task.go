@@ -30,20 +30,24 @@ func runTask(cfg *config.Config) {
 
 	// 1. 更新组播源列表（从iptvmulticast.php获取，数量从配置读取）
 	log.Info("[步骤1] 更新组播源列表...")
-	sources, err := FetchMulticastIPs(cfg.Cookie.Data)
-	if err != nil {
-		log.Warn("获取组播源失败: %v", err)
-		_ = bark.Push("IPTV", "获取组播源失败: %v", err.Error())
-		log.Info("将使用config/source.txt中的现有URL")
-	} else {
-		log.Info("成功获取 %d 个组播源IP", len(sources))
-		_ = bark.Push("IPTV", "成功获取 %d 个组播源IP", len(sources))
-		err = UpdateSourceFile(sources, "config")
+	if cfg.MulticastIP.Enable {
+		sources, err := FetchMulticastIPs(cfg.Cookie.Data)
 		if err != nil {
-			log.Warn("更新source.txt失败: %v", err)
+			log.Warn("获取组播源失败: %v", err)
+			_ = bark.Push("IPTV", "获取组播源失败: %v", err.Error())
+			log.Info("将使用config/source.txt中的现有URL")
 		} else {
-			log.Info("已更新config/source.txt")
+			log.Info("成功获取 %d 个组播源IP", len(sources))
+			_ = bark.Push("IPTV", "成功获取 %d 个组播源IP", len(sources))
+			err = UpdateSourceFile(sources, "config")
+			if err != nil {
+				log.Warn("更新source.txt失败: %v", err)
+			} else {
+				log.Info("已更新config/source.txt")
+			}
 		}
+	} else {
+		_ = bark.Push("IPTV", "获取组播源关闭，跳过")
 	}
 
 	// 2. 读取URL列表
